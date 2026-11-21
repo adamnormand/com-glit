@@ -117,6 +117,8 @@ NEWSLETTER_BLOCK = '<p style="text-align:center;margin:1.5em 0"><a href="http://
 
 STATIC_CSS = '''<style id="static-fixes">
 .sow-slider-base ul.sow-slider-images li.sow-slider-image{min-height:inherit}
+@media screen and (min-width:866px){#navigation ul li:hover>ul,#navigation ul li:focus-within>ul{display:block;opacity:1;left:auto}#navigation ul ul li:hover>ul,#navigation ul ul li:focus-within>ul{left:188px}}
+@media screen and (max-width:865px){#navigation ul ul{display:block}#navigation ul ul a{padding-left:40px!important;font-weight:400}}
 .sow-slider-base ul.sow-slider-images li.sow-slider-image .sow-slider-image-container{min-height:inherit;position:relative;z-index:1}
 </style>'''
 
