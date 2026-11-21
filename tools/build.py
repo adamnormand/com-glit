@@ -109,11 +109,17 @@ CALENDAR_BLOCK = f'''<div class="eqlc-calendar" style="text-align:center;margin:
 </div>'''
 
 MENU_JS = '''<script>
+function eqlcMail(f){var g=function(n){var e=f.querySelector('[name="'+n+'"]');return e?e.value:''};var c=f.querySelector('input[type=checkbox]');if(c&&!c.checked){alert('Please check the consent box.');return false}var body=g('your-message')+'\\n\\n'+g('your-name')+'\\n'+g('your-email');location.href='mailto:'+'info@eqlit.ca?subject='+encodeURIComponent(g('Subject')||'Message from eqlit.ca')+'&body='+encodeURIComponent(body);return false}
 document.addEventListener('DOMContentLoaded',function(){var p=document.getElementById('pull');if(p){p.addEventListener('click',function(e){e.preventDefault();document.body.classList.toggle('mobile-menu-active');});}
+var cal=document.querySelector('[data-eqlc-cal]');if(cal){var M=['January','February','March','April','May','June','July','August','September','October','November','December'],D=['SU','MO','TU','WE','TH','FR','SA'],now=new Date(),cy=now.getFullYear(),cm=now.getMonth();var nav=document.querySelector('[data-eqlc-nav]');function draw(){var first=new Date(cy,cm,1).getDay(),n=new Date(cy,cm+1,0).getDate(),prevN=new Date(cy,cm,0).getDate();var h='<div class="mec-month-container mec-month-container-selected"><div class="mec-calendar-table-head">'+D.map(function(d){return '<div class="mec-calendar-day-head">'+d+'</div>'}).join('')+'</div>';var cells=[];for(var i=first-1;i>=0;i--)cells.push('<dt class="mec-table-nullday">'+(prevN-i)+'</dt>');for(var d=1;d<=n;d++){var t=(cy===now.getFullYear()&&cm===now.getMonth()&&d===now.getDate());cells.push('<dt class="mec-calendar-day'+(t?' mec-selected-day':'')+'">'+d+'</dt>')}var k=1;while(cells.length%7)cells.push('<dt class="mec-table-nullday">'+(k++)+'</dt>');for(var r=0;r<cells.length;r+=7)h+='<dl class="mec-calendar-row">'+cells.slice(r,r+7).join('')+'</dl>';cal.innerHTML=h+'</div>';if(nav){nav.querySelector('.mec-calendar-header h2').textContent=M[cm]+' '+cy;var b=nav.querySelectorAll('button.mec-load-month-link');b[0].innerHTML='<i class="mec-sl-angle-left" aria-hidden="true"></i> '+M[(cm+11)%12];b[1].innerHTML=M[(cm+1)%12]+' <i class="mec-sl-angle-right" aria-hidden="true"></i>';}}if(nav){var b=nav.querySelectorAll('button.mec-load-month-link');b[0].onclick=function(){cm--;if(cm<0){cm=11;cy--}draw()};b[1].onclick=function(){cm++;if(cm>11){cm=0;cy++}draw()};}draw();}
 document.querySelectorAll('.sow-slider-images').forEach(function(s){var f=[].slice.call(s.children).filter(function(c){return c.classList.contains('sow-slider-image')});f.forEach(function(x,i){x.style.display=i?'none':'block'});if(f.length<2)return;var i=0;setInterval(function(){f[i].style.display='none';i=(i+1)%f.length;f[i].style.display='block'},6000);});});
 </script>'''
 
 NEWSLETTER_BLOCK = '<p style="text-align:center;margin:1.5em 0"><a href="http://eepurl.com/hyc81X" target="_blank" rel="noopener" style="display:inline-block;background:#8e2a8c;color:#fff;padding:14px 32px;border-radius:30px;font-weight:700;text-decoration:none">Subscribe to the newsletter</a></p>'
+
+MC_U = '784bb386b8b75ce4e66387c66'
+MC_ID = '197414fd22'
+MC_ACTION = 'https://gaspelit.us1.list-manage.com/subscribe/post'
 
 STATIC_CSS = '''<style id="static-fixes">
 .sow-slider-base ul.sow-slider-images li.sow-slider-image{min-height:inherit}
@@ -142,34 +148,52 @@ for slug, html in pages.items():
         rel = set(t.get('rel') or [])
         if rel & DROP_LINK_RELS or 'wp-json' in (t.get('href') or ''):
             t.decompose()
-    # dead plugin styles (events calendar, contact form, LMS)
-    for t in soup.find_all('link', rel='stylesheet'):
-        h = t.get('href', '')
-        if any(k in h for k in ('modern-events-calendar', 'contact-form-7', '/tutor/')):
-            t.decompose()
-
-    # header search box
+    # header search box: same look, searches eqlit.ca through DuckDuckGo
     for f in soup.find_all('form', attrs={'role': 'search'}):
-        w = f.find_parent(class_='widget-header') or f
-        w.decompose()
-    # contact form -> email / phone
-    for f in soup.select('.wp-block-contact-form-7-contact-form-selector, .wpcf7'):
-        if f.parent is not None:
-            f.replace_with(BeautifulSoup(CONTACT_BLOCK, 'lxml').div)
-    # events calendar: sidebar widgets dropped, page content replaced
-    first = True
-    for m in soup.select('.mec-wrap'):
-        if m.parent is None:
-            continue
-        in_sidebar = m.find_parent('aside') is not None
-        holder = m.find_parent(class_='widget') or m
-        if in_sidebar:
-            holder.decompose()
-        elif first:
-            m.replace_with(BeautifulSoup(CALENDAR_BLOCK, 'lxml').div)
-            first = False
-        else:
-            m.decompose()
+        f['action'] = 'https://duckduckgo.com/'
+        f['target'] = '_blank'
+        inp = f.find('input', attrs={'name': 's'})
+        if inp:
+            inp['name'] = 'q'
+        h = soup.new_tag('input', attrs={'type': 'hidden', 'name': 'sites', 'value': 'eqlit.ca'})
+        f.append(h)
+    # contact form: same form, sends through the visitor's email app
+    for f in soup.select('form.wpcf7-form'):
+        for fs in f.select('fieldset.hidden-fields-container'):
+            fs.decompose()
+        f['action'] = 'mailto:' + EMAIL
+        f['class'] = f.get('class', []) + ['eqlc-mailto-form']
+        f['onsubmit'] = 'return eqlcMail(this)'
+        del f['novalidate']
+        note = BeautifulSoup('<p style="font-size:.85em;color:#777">Clicking Send opens your email program with your message ready to send to ' + EMAIL + '.</p>', 'html.parser')
+        f.append(note)
+    # Mailchimp signup: same form, posts directly to the Mailchimp list
+    for f in soup.select('form.mc_signup_form'):
+        f['action'] = MC_ACTION
+        f['method'] = 'post'
+        f['target'] = '_blank'
+        for i in f.select('input[type=hidden], input[name=mailchimp_sf_alt_email]'):
+            if i.get('name') == 'mailchimp_sf_alt_email':
+                (i.find_parent(class_=lambda c: c and 'mc_alt' in c) or i.find_parent('div') or i).decompose()
+            else:
+                i.decompose()
+        for i in f.select('input[name=mc_mv_EMAIL]'):
+            i['name'] = 'EMAIL'; i['type'] = 'email'; i['required'] = ''
+        for i in f.select('input[name=mc_mv_FNAME]'):
+            i['name'] = 'FNAME'
+        f.append(soup.new_tag('input', attrs={'type': 'hidden', 'name': 'u', 'value': MC_U}))
+        f.append(soup.new_tag('input', attrs={'type': 'hidden', 'name': 'id', 'value': MC_ID}))
+    # events: sidebar widget keeps its slot; calendar page keeps the month grid
+    for m in soup.select('aside .mec-wrap .mec-skin-grid-events-container'):
+        m.clear()
+        m.append(BeautifulSoup('<a href="' + FACEBOOK + '" target="_blank" rel="noopener">Upcoming events: see our Facebook page</a>', 'html.parser'))
+    for t in soup.select('#content .mec-wrap .mec-calendar-table'):
+        t.clear()
+        t['data-eqlc-cal'] = '1'
+        wrap = t.find_parent(class_='mec-wrap')
+        wrap.insert_after(BeautifulSoup('<p style="text-align:center;margin-top:1em">Upcoming programs, workshops and events are announced on our <a href="' + FACEBOOK + '" target="_blank" rel="noopener">Facebook page</a>.</p>', 'html.parser'))
+    for nav in soup.select('#content .mec-month-navigator'):
+        nav['data-eqlc-nav'] = '1'
     # SiteOrigin sliders/heroes are hidden until their JS runs: show them statically
     for base in soup.select('.sow-slider-base'):
         if base.has_attr('style'):
@@ -180,8 +204,6 @@ for slug, html in pages.items():
     for v in soup.select('video.sow-full-element'):
         v['style'] = 'opacity:1;width:100%;height:auto;display:block'
     # Mailchimp signup form posts to WordPress -> point to the hosted Mailchimp form if present
-    for f in soup.select('form#mc_signup_form, .mc_signup_form'):
-        f.replace_with(BeautifulSoup(NEWSLETTER_BLOCK, 'html.parser'))
 
     # URLs
     for tag in soup.find_all(True):

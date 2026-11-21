@@ -15,11 +15,13 @@ Static copy of eqlit.ca, migrated off WordPress on 2026-11-21. It has the same t
 
 ## What changed from WordPress
 
-- **Header search box:** removed. It needed the WordPress database.
-- **Contact form (Contact Us):** replaced by an email button (info@eqlit.ca) and the phone number.
-- **Events calendar** (Modern Events Calendar plugin): the sidebar widget is removed and the Calendar page points to the Facebook page for upcoming events.
-- **Newsletter signup form:** replaced by a button to the hosted Mailchimp form (eepurl.com/hyc81X).
-- **Sliders:** rotate with a few lines of plain JavaScript instead of the plugin. A small script also opens the mobile menu.
+All of these keep the original look:
+- **Header search box:** searches eqlit.ca through DuckDuckGo, in a new tab.
+- **Contact form:** same fields. Send opens the visitor's email program with the message addressed to info@eqlit.ca.
+- **Newsletter form:** same fields. It posts straight to the Mailchimp list (gaspelit.us1.list-manage.com), so new subscribers land in Mailchimp as before.
+- **Calendar page:** the same month grid, built in the browser for the current month, plus a link to the Facebook page for upcoming events.
+- **Sidebar events widget:** now reads "Upcoming events: see our Facebook page".
+- **Menus, sliders and the mobile menu:** run on CSS or a few lines of plain JavaScript.
 - **Removed:** all WordPress tracking, feeds and plugin scripts.
 
 ## Publish
